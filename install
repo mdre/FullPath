@@ -1,0 +1,7 @@
+#!/bin/bash
+LATEST="$(ls -t build/libs/fullPath-?.?.?.??.jar | head -1)"
+echo "removiendo la versión instalada..."
+rm /opt/orientdb/plugins/fullPath.jar
+sleep 5
+echo "instalando ${LATEST}..."
+cp ${LATEST} /opt/orientdb/plugins/fullPath.jar
