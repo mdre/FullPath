@@ -25,11 +25,13 @@ import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.OSQLEngine;
 import com.orientechnologies.orient.core.sql.executor.OInternalResultSet;
 import com.orientechnologies.orient.core.sql.executor.OResult;
+import com.orientechnologies.orient.core.sql.executor.OResultInternal;
 import com.orientechnologies.orient.core.sql.functions.OSQLFunctionAbstract;
 import com.orientechnologies.orient.core.sql.parser.OLocalResultSet;
 import com.orientechnologies.orient.server.OServer;
 import com.orientechnologies.orient.server.config.OServerParameterConfiguration;
 import com.orientechnologies.orient.server.plugin.OServerPluginAbstract;
+
 
 import groovy.util.logging.Log;
 
@@ -101,14 +103,19 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                         LOGGER.log(Level.FINEST, "param 0: ERROR ArrayList > 1");
                         return null;
                     } else {
-                        LOGGER.log(Level.FINEST, "param 0: ArrayList");
-                        from = (OElement) (((ArrayList) iParams[0]).get(0));
+                        from = ((OResult)(((ArrayList) iParams[0]).get(0))).getElement().get();
+                        LOGGER.log(Level.FINEST, "param 0: ArrayList - from: "+from);
                     }
-                }
-
-                if ((iParams[0] instanceof ORecordId)) {
+                } else if ((iParams[0] instanceof OResult)) {
+                    OResult orF = (OResult)iParams[0];
+                    from = orF.getElement().get();
+                
+                } else if ((iParams[0] instanceof ORecordId)) {
                     LOGGER.log(Level.FINEST,"param 0: ORecordID" );
                     from = (OElement) (((ORecordId) iParams[0]).getRecord());
+                } else {
+                    LOGGER.log(Level.SEVERE, "NOT SUPPORTED TYPE: "+iParams[0].getClass().getName());
+                    return null;
                 }
                 //----------------------------------------------------------------------
                 // repetir para iParam[1]
@@ -117,14 +124,16 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                         LOGGER.log(Level.FINEST, "param 1: ERROR ArrayList > 1");
                         return null;
                     } else {
-                        LOGGER.log(Level.FINEST, "param 0: ArrayList");
-                        to = (OElement) (((ArrayList) iParams[1]).get(0));
+                        to = ((OResult)(((ArrayList) iParams[1]).get(0))).getElement().get();
+                        LOGGER.log(Level.FINEST, "param 1: ArrayList - to: "+to);
                     }
-                }
+                } else if ((iParams[1] instanceof OResult)) {
+                    OResult orF = (OResult)iParams[1];
+                    from = orF.getElement().get();
                 
-                if ((iParams[1] instanceof ORecordId)) {
-                    LOGGER.log(Level.FINEST,"param 1: ORecordID" );
+                } if ((iParams[1] instanceof ORecordId)) {
                     to = (OElement) (((ORecordId) iParams[1]).getRecord());
+                    LOGGER.log(Level.FINEST,"param 1: ORecordID - to: "+to );
                 }
                 //======================================================================
                 

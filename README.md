@@ -11,5 +11,7 @@ Search all the path beteween to elements.
 ## Example
 ```Java
 OResultSet r = db.query("select fullPath(#58:0,#65:0,{'maxDepth': 10, 'include': ['FullPathTest','path_1'],'exclude': ['path_2']}) as fp;");
+
+OResultSet r = db.query("select fullPath((select from FullPathTest where name="n1"),(select from FullPathTest where name="n4"),{'maxDepth': 10, 'include': ['FullPathTest','path_1'],'exclude': ['path_2']}) as fp;");
 ``` 
 
