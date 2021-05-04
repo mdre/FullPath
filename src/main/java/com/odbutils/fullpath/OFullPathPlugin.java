@@ -48,7 +48,7 @@ public class OFullPathPlugin extends OServerPluginAbstract {
     OElement from;
     OElement to;
     int maxDepth;
-    String direction;
+    ODirection direction;
     private String version;
     List<String> include = null;
     List<String> exclude = null;
@@ -145,7 +145,7 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                 include = null;
                 exclude = null;
                 maxDepth = 100;
-                direction = "BOTH";
+                direction = ODirection.BOTH;
                 
                 if (iParams.length > 2) {
                     HashMap<String,Object> param = (HashMap)iParams[2];
@@ -159,13 +159,15 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                     }
 
                     if (param.containsKey("direction")) {
-                        direction = param.get("direction").toString();
+                        String d = param.get("direction").toString();
                         LOGGER.log(Level.FINEST,"direction: "+direction );
-                        if (!(
-                            direction.equalsIgnoreCase("IN")
-                            ||direction.equalsIgnoreCase("OUT")
-                            ||direction.equalsIgnoreCase("BOTH")
-                            )) {
+                        if (d.equalsIgnoreCase("IN")) {
+                            direction = ODirection.IN;
+                        } else if (d.equalsIgnoreCase("OUT")) {
+                            direction = ODirection.OUT;
+                        } else if (d.equalsIgnoreCase("BOTH")) {
+                            direction = ODirection.BOTH;
+                        } else {
                             LOGGER.log(Level.SEVERE, "direction must be IN, OUT or BOTH");    
                         }
                     }
