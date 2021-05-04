@@ -36,7 +36,7 @@ public class OFullPathPlugin extends OServerPluginAbstract {
             LOGGER.setLevel(Level.FINEST);
         }
     }
-    List<List<OIdentifiable>> paths;
+    List<OIdentifiable[]> paths;
     List<List<OIdentifiable>> tmpPaths;
     OElement from;
     OElement to;
@@ -152,10 +152,15 @@ public class OFullPathPlugin extends OServerPluginAbstract {
 
         // si el from es igual al to, entonces llegamos y podemos cerrar el path.
         if (from.equals(to)) {
-            System.out.println("Path completo!!!");
-            LOGGER.log(Level.FINEST, Arrays.toString(tmpPaths.get(tmpCurrentPathIdx).toArray()));
-            paths.add(tmpPaths.get(tmpCurrentPathIdx));
+            LOGGER.log(Level.FINEST,"Path completo!!!" );
 
+            // agregar el from para completar...
+            tmpPaths.get(tmpCurrentPathIdx).add(from);
+            LOGGER.log(Level.FINEST, Arrays.toString(tmpPaths.get(tmpCurrentPathIdx).toArray()));
+            paths.add(tmpPaths.get(tmpCurrentPathIdx).toArray(new OElement[tmpPaths.get(tmpCurrentPathIdx).size()]));
+            
+            // y removerlo para seguir
+            tmpPaths.get(tmpCurrentPathIdx).remove(tmpPaths.get(tmpCurrentPathIdx).size() - 1);
         } else {
             List<OIdentifiable> tmp = tmpPaths.get(tmpCurrentPathIdx);
             // si el OElement ya forma parte del tmp, retornar para no genear loops,

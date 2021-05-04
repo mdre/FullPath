@@ -1,0 +1,8 @@
+{
+    "name" : "fullpath-plugin",
+    "version" : "0.0.1",
+    "javaClass": "com.odbutils.fullpath.OFullPathPlugin",
+    "parameters" : {},
+    "description" : "FullPath Plugin",
+    "copyrights" : "No copyrights"
+}
