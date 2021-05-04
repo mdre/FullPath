@@ -1,8 +1,13 @@
 package com.odbutils.fullpath;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,6 +31,8 @@ import com.orientechnologies.orient.server.OServer;
 import com.orientechnologies.orient.server.config.OServerParameterConfiguration;
 import com.orientechnologies.orient.server.plugin.OServerPluginAbstract;
 
+import groovy.util.logging.Log;
+
 public class OFullPathPlugin extends OServerPluginAbstract {
     private static final long serialVersionUID = 5630472247035117753L;
 
@@ -41,8 +48,14 @@ public class OFullPathPlugin extends OServerPluginAbstract {
     OElement from;
     OElement to;
     int maxDepth;
+    String direction;
+    private String version;
+    List<String> include = null;
+    List<String> exclude = null;
 
     public OFullPathPlugin() {
+        version = new Scanner(getClass().getResourceAsStream("/version.txt")).useDelimiter("\\Z").next();
+        LOGGER.log(Level.FINEST,"Version: " + version );
     }
 
     @Override
@@ -62,7 +75,9 @@ public class OFullPathPlugin extends OServerPluginAbstract {
             @Override
             public Object execute(Object iThis, OIdentifiable iCurrentRecord, Object iCurrentResult,
                     final Object[] iParams, OCommandContext iContext) {
-                System.out.println("entrando en el excute!");
+                LOGGER.log(Level.FINEST, "entrando en el excute!");
+                LOGGER.log(Level.FINEST, version );
+
                 from = null;
                 to = null;
                 if (LOGGER.getLevel() == Level.FINEST) {
@@ -117,12 +132,58 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                     LOGGER.log(Level.FINEST,"param distinct OElement");
                     return null;
                 }
+                //======================================================================
 
-                if ((iParams.length > 2) && (!(iParams[2] instanceof Integer))) {
-                    System.out.println("param 3");
+                // Análisis de los parámtros opcionales
+                // maxDepth
+                if ((iParams.length > 2) && (!(iParams[2] instanceof Map))) {
+                    LOGGER.log(Level.SEVERE, "parameters must be a passed in a Map");
+                    LOGGER.log(Level.FINEST, iParams[2].getClass().getName() );
                     return null;
                 }
 
+                include = null;
+                exclude = null;
+                maxDepth = 100;
+                direction = "BOTH";
+                
+                if (iParams.length > 2) {
+                    HashMap<String,Object> param = (HashMap)iParams[2];
+
+                    LOGGER.log(Level.FINEST, ""+param);
+
+                    // recuperar el maxDepth
+                    if (param.containsKey("maxDepth")) {
+                        maxDepth = (int)param.get("maxDepth");
+                        LOGGER.log(Level.FINEST,"maxDepth: "+maxDepth );
+                    }
+
+                    if (param.containsKey("direction")) {
+                        direction = param.get("direction").toString();
+                        LOGGER.log(Level.FINEST,"direction: "+direction );
+                        if (!(
+                            direction.equalsIgnoreCase("IN")
+                            ||direction.equalsIgnoreCase("OUT")
+                            ||direction.equalsIgnoreCase("BOTH")
+                            )) {
+                            LOGGER.log(Level.SEVERE, "direction must be IN, OUT or BOTH");    
+                        }
+                    }
+
+                    if (param.containsKey("include")) {
+                        LOGGER.log(Level.FINEST, param.get("include").getClass().getName());
+                        include = (ArrayList)param.get("include");
+                        LOGGER.log(Level.FINEST,"include: "+include );
+                    }
+
+                    if (param.containsKey("exclude")) {
+                        exclude = (ArrayList)param.get("exclude");
+                        LOGGER.log(Level.FINEST,"exclude: "+exclude );
+                    }
+
+                }
+
+                
                 // inicializar los paths
                 paths = new ArrayList<>();
                 tmpPaths = new ArrayList<>();
@@ -131,13 +192,8 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                 int tmpCurrentPathIdx = 0;
 
                 
-                if (iParams.length > 2) {
-                    maxDepth = ((Integer) iParams[2]).intValue();
-                } else {
-                    maxDepth = 20;
-                }
 
-                fullpathImpl(from, to, 0, tmpCurrentPathIdx);
+                fullpathImpl(from, to, 1, tmpCurrentPathIdx);
                 System.out.println("FIN: paths encontrados: " + paths.size());
                 return paths;
             }
@@ -149,6 +205,20 @@ public class OFullPathPlugin extends OServerPluginAbstract {
     private void fullpathImpl(OElement from, OElement to, int startDepth, int tmpCurrentPathIdx) {
         LOGGER.log(Level.FINEST,"from: "+from.toString()+ " -- to: " + to.toString() + "  -- depth: " + startDepth );
         
+        // validar que el from no esté en la lista de exclusión.
+        if (exclude != null && from.getSchemaType().isPresent() 
+            && exclude.contains(from.getSchemaType().get().getName())) {
+            LOGGER.log(Level.FINEST, ">>>>>> Excluido: "+from);
+            return;
+        }
+
+        // validar que el from esté en la lista de inclusiones.       
+        
+        if (include!=null && from.getSchemaType().isPresent() 
+            && !include.contains(from.getSchemaType().get().getName())) {
+                LOGGER.log(Level.FINEST, ">>>>>> No incluido: "+from);
+            return;
+        }
 
         // si el from es igual al to, entonces llegamos y podemos cerrar el path.
         if (from.equals(to)) {

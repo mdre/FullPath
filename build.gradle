@@ -56,18 +56,22 @@ compileJava {
 def sonatypeUser = credentials.sonatypeUser
 def sonatypePassword = credentials.sonatypePassword
 
+def currentVersionNumber = ""
 
 // incrementar automáticamente el buildNumber
 task autoBuildNumber {
     doFirst {
         File propertiesFile = new File('gradle.properties')
+        File versionTxt = new File('src/main/resources/version.txt')
         def lines = propertiesFile.readLines()
 
         PrintWriter printWriter = new PrintWriter(propertiesFile)
-        
+        PrintWriter printVersion = new PrintWriter(versionTxt)
+
         lines.each {String line ->
             if (line.startsWith("version") ){
                 String versionNumber = line.tokenize("=")[1]
+                currentVersionNumber = versionNumber
                 String[] versionParts = versionNumber.tokenize(".")
                 // recalcular el build 
                 versionNumber = versionParts[0]+\
@@ -75,12 +79,15 @@ task autoBuildNumber {
                                 '.'+versionParts[2]+
                                 '.'+( versionParts.length==4 ? (versionParts[3].toInteger()+1).toString():"1")
                 
+                
                 line = "version="+versionNumber
+                printVersion.println("fullPath "+line)
 //                println line
             }
             printWriter.println(line)
         }
         printWriter.close()
+        printVersion.close()
     }
 }
 
@@ -298,5 +305,22 @@ task debug(dependsOn: 'classes',type:JavaExec) {
         standardOutput = System.out
         errorOutput = System.err
         debug true
+    }
+}
+
+
+task deploy(dependsOn: 'build'){
+    doLast {
+        println "deployando"
+        println currentVersionNumber
+        println "build/libs/fullPath-${currentVersionNumber}.jar"
+        delete "/opt/orientdb/plugins/fullPath.jar"
+
+        copy {
+            from "build/libs/fullPath-${currentVersionNumber}.jar" 
+            
+            into "/opt/orientdb/plugins/"
+            rename { filename -> 'fullPath.jar' }
+        }    
     }
 }
