@@ -9,7 +9,7 @@ Search all the path beteween to elements.
 - exclude: [] array of string indicating the class name to exclude.
 
 ## Example
-``Java
+```Java
 OResultSet r = db.query("select fullPath(#58:0,#65:0,{'maxDepth': 10, 'include': ['FullPathTest','path_1'],'exclude': ['path_2']}) as fp;");
 ``` 
 
