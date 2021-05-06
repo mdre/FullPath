@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.orient.core.command.OCommandContext;
@@ -54,6 +55,11 @@ public class OFullPathPlugin extends OServerPluginAbstract {
     private String version;
     List<String> include = null;
     List<String> exclude = null;
+    List<String> includeEdges = null;
+    List<String> excludeEdges = null;
+    List<String> includeClasses = null;
+    List<String> excludeClasses = null;
+
 
     public OFullPathPlugin() {
         version = new Scanner(getClass().getResourceAsStream("/version.txt")).useDelimiter("\\Z").next();
@@ -192,6 +198,46 @@ public class OFullPathPlugin extends OServerPluginAbstract {
                         LOGGER.log(Level.FINEST,"exclude: "+exclude );
                     }
 
+                    //----------------------------------------------------------------------
+                    if (param.containsKey("includeEdges")) {
+                        LOGGER.log(Level.FINEST, param.get("includeEdges").getClass().getName());
+                        includeEdges = (ArrayList)param.get("includeEdges");
+                        LOGGER.log(Level.FINEST,"includeEdges: "+include );
+                    }
+
+                    if (param.containsKey("excludeEdges")) {
+                        excludeEdges = (ArrayList)param.get("excludeEdges");
+                        LOGGER.log(Level.FINEST,"excludeEdges: "+exclude );
+                    }
+
+                    //----------------------------------------------------------------------
+                    if (param.containsKey("includeClasses")) {
+                        LOGGER.log(Level.FINEST, param.get("includeClasses").getClass().getName());
+                        includeClasses = (ArrayList)param.get("includeClasses");
+                        
+                        // para cada clase incluida, recuperar todas las subclases.
+                        ArrayList<String> subCIn = new ArrayList<>(); 
+                        for (String clase : includeClasses) {
+                            subCIn.addAll(iContext.getDatabase().getClass(clase).getAllSubclasses().stream().map(c->c.getName()).collect(Collectors.toList()));
+                        }
+                        includeClasses.addAll(subCIn);
+                        LOGGER.log(Level.FINEST,"includeClasses: "+include );
+                    }
+
+                    if (param.containsKey("excludeClasses")) {
+                        excludeClasses = (ArrayList)param.get("excludeClasses");
+
+                        // para cada clase incluida, recuperar todas las subclases.
+                        ArrayList<String> subCEx = new ArrayList<>(); 
+                        for (String clase : excludeClasses) {
+                            subCEx.addAll(iContext.getDatabase().getClass(clase).getAllSubclasses().stream().map(c->c.getName()).collect(Collectors.toList()));
+                        }
+
+                        excludeClasses.addAll(subCEx);
+
+                        LOGGER.log(Level.FINEST,"excludeClasses: "+exclude );
+                    }
+
                 }
 
                 
@@ -215,7 +261,9 @@ public class OFullPathPlugin extends OServerPluginAbstract {
 
     private void fullpathImpl(OElement from, OElement to, int startDepth, int tmpCurrentPathIdx) {
         LOGGER.log(Level.FINEST,"from: "+from.toString()+ " -- to: " + to.toString() + "  -- depth: " + startDepth );
-        
+        //======================================================================
+        // validar los filtros
+        //======================================================================
         // validar que el from no esté en la lista de exclusión.
         if (exclude != null && from.getSchemaType().isPresent() 
             && exclude.contains(from.getSchemaType().get().getName())) {
@@ -224,13 +272,41 @@ public class OFullPathPlugin extends OServerPluginAbstract {
         }
 
         // validar que el from esté en la lista de inclusiones.       
-        
         if (include!=null && from.getSchemaType().isPresent() 
             && !include.contains(from.getSchemaType().get().getName())) {
                 LOGGER.log(Level.FINEST, ">>>>>> No incluido: "+from);
             return;
         }
+        //----------------------------------------------------------------------
+        //-- include/exclude Edges
+        if (excludeEdges != null && from.isEdge() && from.getSchemaType().isPresent() 
+            && exclude.contains(from.getSchemaType().get().getName())) {
+            LOGGER.log(Level.FINEST, ">>>>>> Excluido: "+from);
+            return;
+        }
 
+        // validar que el from esté en la lista de inclusiones.       
+        if (includeEdges!=null && from.isEdge() && from.getSchemaType().isPresent() 
+            && !include.contains(from.getSchemaType().get().getName())) {
+                LOGGER.log(Level.FINEST, ">>>>>> No incluido: "+from);
+            return;
+        }
+        //----------------------------------------------------------------------
+        //-- include/exclude Classes
+        if (excludeClasses != null && from.getSchemaType().isPresent() 
+            && exclude.contains(from.getSchemaType().get().getName())) {
+            LOGGER.log(Level.FINEST, ">>>>>> Excluido: "+from);
+            return;
+        }
+
+        // validar que el from esté en la lista de inclusiones.       
+        if (includeClasses!=null && from.getSchemaType().isPresent() 
+            && !include.contains(from.getSchemaType().get().getName())) {
+                LOGGER.log(Level.FINEST, ">>>>>> No incluido: "+from);
+            return;
+        }
+
+        //======================================================================
         // si el from es igual al to, entonces llegamos y podemos cerrar el path.
         if (from.equals(to)) {
             LOGGER.log(Level.FINEST,"Path completo!!!" );

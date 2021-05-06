@@ -5,8 +5,12 @@ Search all the path beteween to elements.
 ### Avaliable parametes:
 - maxDepth: <int> set maximum level of depth. Default: 100;
 - direction: "IN", "OUT", "BOTH"
-- include: [] array of string indicating the class name to include.
-- exclude: [] array of string indicating the class name to exclude.
+- include: [] array of string indicating the class name to include. It match Edges and Vertex class.
+- exclude: [] array of string indicating the class name to exclude. It match Edges and Vertex class.
+- includeEdge: [] array of string indicating the class name of Edges to include.
+- excludeEdge: [] array of string indicating the class name of Edges to exclude.
+- includeClasses: [] array of string indicating the class name of to include. All subclasses will be added automatically. It match Edges and Vertex class.
+- excludeClasses: [] array of string indicating the class name of to exclude. All subclasses will be added automatically. It match Edges and Vertex class.
 
 ## Example
 ```Java
