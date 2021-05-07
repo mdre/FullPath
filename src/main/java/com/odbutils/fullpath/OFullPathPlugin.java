@@ -43,7 +43,7 @@ public class OFullPathPlugin extends OServerPluginAbstract {
     static {
         // AnsiColorConsoleHandler.init();
         if (LOGGER.getLevel() == null) {
-            LOGGER.setLevel(Level.FINEST);
+            LOGGER.setLevel(Level.INFO);
         }
     }
     List<OIdentifiable[]> paths;
